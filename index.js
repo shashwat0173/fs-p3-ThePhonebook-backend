@@ -1,12 +1,16 @@
 const express = require('express');
 const morgan = require('morgan');
+const cors = require('cors');
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
+app.use(express.static('dist'));
 app.use(express.json());
 app.use(morgan('tiny'));
+app.use(cors());
 
-const persons = [
+
+let persons = [
     { 
       "id": "1",
       "name": "Arto Hellas", 
@@ -27,52 +31,69 @@ const persons = [
       "name": "Mary Poppendieck", 
       "number": "39-23-6423122"
     }
-]
+];
 
 
 app.get('/api/persons', (req, res) => {
+    console.log('Received GET request for all persons');
     res.status(200).json(persons);
+    console.log('Sent response with all persons');
 });
 
 app.get('/api/persons/:id', (req, res) => {
     const id = req.params.id;
+    console.log(`Received GET request for id ${id}`);
     const person = persons.find(person => person.id === id);
     if (person) {
+        console.log(`Found person: ${JSON.stringify(person)}`);
         res.status(200).json(person);
     } else {
+        console.log(`Person with id ${id} not found`);
         res.status(404).send('Person not found');
     }
 });
 
 app.delete('/api/persons/:id', (req, res) => {
     const id = req.params.id;
-    const person = persons.find(person => person.id === id);
-    if (person) {
+    console.log(`Received DELETE request for id ${id}`);
+    const personDel = persons.find(person => person.id === id);
+    if (personDel) {
+        console.log(`Deleting person ${JSON.stringify(personDel)}`);
         persons = persons.filter(person => person.id !== id);
-        res.status(204).end();
+        console.log(`Deleted person with id ${id}`);
+        res.status(200).json(personDel);
     } else {
-        res.status(404).send('Person not found');
+        console.log(`Person with id ${id} not found`);
+        res.status(404).send(`Person with id ${id} not found`);
     }
 });
 
 app.post('/api/persons', (req, res) => {
     const body = req.body;
+    console.log('Received POST request:', body);
+    
     if (!body.name || !body.number) {
+        console.log('Missing name or number');
         return res.status(400).json({
             error: 'name or number is missing'
         });
     }
+    
     if (persons.find(person => person.name === body.name)) {
+        console.log('Name already exists:', body.name);
         return res.status(400).json({
-            error: 'name already exsits in the phonebook'
+            error: 'name already exists in the phonebook'
         });
     }
+    
     const person = {
-        id: Math.floor(Math.random() * 10000),
+        id: String(Math.floor(Math.random() * 10000)),
         name: body.name,
         number: body.number
     };
+    
     persons = persons.concat(person);
+    console.log(`Added person: ${JSON.stringify(person)}`);
     res.status(201).json(person);
 });
 
@@ -82,7 +103,6 @@ app.get('/info', (req, res) => {
         <p>${new Date()}</p>`
     );
 });
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
